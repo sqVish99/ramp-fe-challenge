@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useMemo, useState } from "react"
+import { Fragment, useCallback, useEffect, useState } from "react"
 import { InputSelect } from "./components/InputSelect"
 import { Instructions } from "./components/Instructions"
 import { Transactions } from "./components/Transactions"
@@ -14,7 +14,7 @@ export function App() {
   const { data: transactionsByEmployee, ...transactionsByEmployeeUtils } = useTransactionsByEmployee()
   const [isLoading, setIsLoading] = useState(false)
   const [accumulatedTransactions, setAccumulatedTransactions] = useState<any>([]);
-  const [isTransactionsLoading, setIsTransactionsLoading] = useState(false)
+  const [isFilteredByEmployee, setIsFilteredByEmployee] = useState(false);
 
   useEffect(() => {
     if (paginatedTransactions?.data) {
@@ -30,16 +30,18 @@ export function App() {
 
   const loadAllTransactions = useCallback(async () => {
     setIsLoading(true)
+    setIsFilteredByEmployee(false);
     transactionsByEmployeeUtils.invalidateData()
 
     await employeeUtils.fetchAll()
     setIsLoading(false)
-    
+
     await paginatedTransactionsUtils.fetchAll()
   }, [employeeUtils, paginatedTransactionsUtils, transactionsByEmployeeUtils])
 
   const loadTransactionsByEmployee = useCallback(
     async (employeeId: string) => {
+      setIsFilteredByEmployee(true);
       paginatedTransactionsUtils.invalidateData()
       await transactionsByEmployeeUtils.fetchById(employeeId)
     },
@@ -70,10 +72,11 @@ export function App() {
             label: `${item.firstName} ${item.lastName}`,
           })}
           onChange={async (newValue) => {
+            setAccumulatedTransactions([]);
             if (newValue === null) {
               return
             }
-            newValue.id ? await loadTransactionsByEmployee(newValue.id) : await loadAllTransactions()
+            newValue === EMPTY_EMPLOYEE ? await loadAllTransactions() : loadTransactionsByEmployee(newValue.id)
           }}
         />
 
@@ -82,7 +85,7 @@ export function App() {
         <div className="RampGrid">
           <Transactions transactions={accumulatedTransactions} />
 
-          {accumulatedTransactions.length > 0 && (
+          {accumulatedTransactions.length > 0 && !isFilteredByEmployee && paginatedTransactions?.nextPage !== null && (
             <button
               className="RampButton"
               disabled={paginatedTransactionsUtils.loading}

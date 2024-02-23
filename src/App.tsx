@@ -13,6 +13,19 @@ export function App() {
   const { data: paginatedTransactions, ...paginatedTransactionsUtils } = usePaginatedTransactions()
   const { data: transactionsByEmployee, ...transactionsByEmployeeUtils } = useTransactionsByEmployee()
   const [isLoading, setIsLoading] = useState(false)
+  const [accumulatedTransactions, setAccumulatedTransactions] = useState<any>([]);
+
+  useEffect(() => {
+    if (paginatedTransactions?.data) {
+      setAccumulatedTransactions((prev: any) => [...prev, ...paginatedTransactions.data]);
+    }
+  }, [paginatedTransactions]);
+
+  useEffect(() => {
+    if (transactionsByEmployee) {
+      setAccumulatedTransactions(transactionsByEmployee);
+    }
+  }, [transactionsByEmployee]);
 
   const transactions = useMemo(
     () => paginatedTransactions?.data ?? transactionsByEmployee ?? null,
@@ -71,9 +84,9 @@ export function App() {
         <div className="RampBreak--l" />
 
         <div className="RampGrid">
-          <Transactions transactions={transactions} />
+          <Transactions transactions={accumulatedTransactions} />
 
-          {transactions !== null && (
+          {accumulatedTransactions.length > 0 && (
             <button
               className="RampButton"
               disabled={paginatedTransactionsUtils.loading}
